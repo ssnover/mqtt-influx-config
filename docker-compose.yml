@@ -1,0 +1,39 @@
+version: "3.9"
+services:
+  mqtt_broker:
+    image: eclipse-mosquitto:2.0
+    ports:
+      - "1883:1883"
+      - "9001:9001"
+    volumes:
+      - ./mosquitto.conf:/mosquitto/config/mosquitto.conf
+    networks:
+      iot-net:
+        ipv4_address: "172.22.22.221"
+  timeseries_database:
+    image: influxdb:2.7
+    ports:
+      - "8086:8086"
+    volumes:
+      - ./data/influxdb:/var/lib/influxdb2
+      - ./influxdb.yml:/etc/influxdb2/config.yml
+    networks:
+      iot-net:
+        ipv4_address: "172.22.22.222"
+  telegraf:
+    image: telegraf:1.28-alpine
+    volumes:
+      - ./telegraf.conf:/etc/telegraf/telegraf.conf:ro
+    networks:
+      iot-net:
+    depends_on:
+      - "mqtt_broker"
+      - "timeseries_database"
+
+networks:
+  iot-net:
+    name: iot-net
+    driver: bridge
+    ipam:
+      config:
+        - subnet: "172.22.22.0/24"
